@@ -2,12 +2,15 @@ import { Routes, Route, NavLink } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Keywords from './pages/Keywords';
 import Settings from './pages/Settings';
-
 const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/keywords', label: 'Keywords' },
   { to: '/settings', label: 'Settings' }
 ];
+
+
+
+
 
 export default function App() {
   return (

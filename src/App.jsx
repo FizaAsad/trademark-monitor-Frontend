@@ -5,7 +5,7 @@ import Settings from './pages/Settings';
 const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/keywords', label: 'Keywords' },
-  { to: '/settings', label: 'Settings' }
+  { to: '/settings', label: 'Scan Control' }
 ];
 
 

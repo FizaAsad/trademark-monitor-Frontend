@@ -352,6 +352,17 @@ export default function Dashboard() {
                           disabled={busy || m.status === "dismissed"}
                           onClick={() => updateStatus(m, "dismissed")}
                         />
+                        {m.status !== "new" && (
+                          <>
+                            <span style={{ display: "inline-block", width: "6px" }} />
+                            <ActionButton
+                              label={busy && m.status === "new" ? "..." : "↺ New"}
+                              color="#2E5FA3"
+                              disabled={busy}
+                              onClick={() => updateStatus(m, "new")}
+                            />
+                          </>
+                        )}
                       </td>
                     </tr>
                   );

@@ -80,10 +80,11 @@ function ActionButton({ label, onClick, color, disabled }) {
 
 // ── Main Dashboard ────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [matches, setMatches]       = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [error, setError]           = useState("");
-  const [actionLoading, setActionLoading] = useState({}); // { "trademark-12": true }
+  const [matches, setMatches]             = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [error, setError]                 = useState("");
+  const [actionLoading, setActionLoading] = useState({});
+  const [pdfLoading, setPdfLoading]       = useState(false);
 
   // ── Filters state ───────────────────────────────────────────────────────────
   const [filterSource,   setFilterSource]   = useState("all");
@@ -110,6 +111,35 @@ export default function Dashboard() {
 
   useEffect(() => { fetchMatches(); }, []);
 
+  // ── PDF export ──────────────────────────────────────────────────────────────
+  async function handleExportPDF() {
+    setPdfLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`${API}/api/reports/pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) throw new Error("PDF generation failed — server returned " + res.status);
+
+      // Convert response to blob and trigger browser download
+      const blob = await res.blob();
+      const url  = window.URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `trademark-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError("PDF export failed: " + err.message);
+    } finally {
+      setPdfLoading(false);
+    }
+  }
+
   // ── PATCH status action ─────────────────────────────────────────────────────
   async function updateStatus(match, newStatus) {
     const key = `${match.category}-${match.id}`;
@@ -124,7 +154,6 @@ export default function Dashboard() {
         }),
       });
       if (!res.ok) throw new Error("PATCH failed");
-      // Update locally — no full refetch needed
       setMatches((prev) =>
         prev.map((m) =>
           m.id === match.id && m.category === match.category
@@ -209,9 +238,22 @@ export default function Dashboard() {
             marketplaces, and social platforms.
           </p>
         </div>
-        <button onClick={fetchMatches} style={styles.refreshBtn}>
-          ↻ Refresh
-        </button>
+        <div style={{ display: "flex", gap: "10px" }}>
+          <button
+            onClick={handleExportPDF}
+            disabled={pdfLoading}
+            style={{
+              ...styles.refreshBtn,
+              background: pdfLoading ? "#888" : "#B22222",
+              cursor: pdfLoading ? "not-allowed" : "pointer",
+            }}
+          >
+            {pdfLoading ? "Generating..." : "⬇ Export PDF"}
+          </button>
+          <button onClick={fetchMatches} style={styles.refreshBtn}>
+            ↻ Refresh
+          </button>
+        </div>
       </div>
 
       {/* Error banner */}
@@ -222,7 +264,7 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Summary cards — wired to live counts */}
+      {/* Summary cards */}
       <div style={styles.cardRow}>
         <SummaryCard label="TOTAL NEW"          count={newMatches.length}  color="#B22222" />
         <SummaryCard label="TRADEMARK MATCHES"  count={trademarkNew}       color="#1B2A4A" />
@@ -232,48 +274,21 @@ export default function Dashboard() {
 
       {/* Filters */}
       <div style={styles.filterBar}>
-        <FilterSelect
-          label="Source"
-          value={filterSource}
-          onChange={setFilterSource}
-          options={sourceOptions}
-        />
-        <FilterSelect
-          label="Keyword"
-          value={filterKeyword}
-          onChange={setFilterKeyword}
-          options={keywordOptions}
-        />
+        <FilterSelect label="Source"  value={filterSource}  onChange={setFilterSource}  options={sourceOptions}  />
+        <FilterSelect label="Keyword" value={filterKeyword} onChange={setFilterKeyword} options={keywordOptions} />
         <div style={styles.filterGroup}>
           <label style={styles.filterLabel}>Date From</label>
-          <input
-            type="date"
-            value={filterDateFrom}
-            onChange={(e) => setFilterDateFrom(e.target.value)}
-            style={styles.select}
-          />
+          <input type="date" value={filterDateFrom} onChange={(e) => setFilterDateFrom(e.target.value)} style={styles.select} />
         </div>
         <div style={styles.filterGroup}>
           <label style={styles.filterLabel}>Date To</label>
-          <input
-            type="date"
-            value={filterDateTo}
-            onChange={(e) => setFilterDateTo(e.target.value)}
-            style={styles.select}
-          />
+          <input type="date" value={filterDateTo} onChange={(e) => setFilterDateTo(e.target.value)} style={styles.select} />
         </div>
-        <FilterSelect
-          label="Status"
-          value={filterStatus}
-          onChange={setFilterStatus}
-          options={statusOptions}
-        />
+        <FilterSelect label="Status" value={filterStatus} onChange={setFilterStatus} options={statusOptions} />
         {hasActiveFilters && (
           <div style={styles.filterGroup}>
             <label style={{ ...styles.filterLabel, opacity: 0 }}>_</label>
-            <button onClick={clearFilters} style={styles.clearBtn}>
-              ✕ Clear
-            </button>
+            <button onClick={clearFilters} style={styles.clearBtn}>✕ Clear</button>
           </div>
         )}
       </div>
@@ -311,56 +326,27 @@ export default function Dashboard() {
               </thead>
               <tbody>
                 {filtered.map((m, i) => {
-                  const key = `${m.category}-${m.id}`;
+                  const key  = `${m.category}-${m.id}`;
                   const busy = !!actionLoading[key];
                   return (
                     <tr key={key} style={{ background: i % 2 === 0 ? "#ffffff" : "#F4F6F9" }}>
-
-                      <td style={styles.td}>
-                        <SourceBadge source={m.source} category={m.category} />
-                      </td>
-
-                      <td style={{ ...styles.td, fontWeight: "600", color: "#1B2A4A" }}>
-                        {m.keyword || "—"}
-                      </td>
-
+                      <td style={styles.td}><SourceBadge source={m.source} category={m.category} /></td>
+                      <td style={{ ...styles.td, fontWeight: "600", color: "#1B2A4A" }}>{m.keyword || "—"}</td>
                       <td style={styles.td}>{m.match_name || "—"}</td>
-
                       <td style={{ ...styles.td, color: "#777", fontSize: "13px" }}>
                         {m.date_found
-                          ? new Date(m.date_found).toLocaleDateString("en-GB", {
-                              day: "2-digit", month: "short", year: "numeric",
-                            })
+                          ? new Date(m.date_found).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
                           : "—"}
                       </td>
-
-                      <td style={styles.td}>
-                        <StatusBadge status={m.status} />
-                      </td>
-
+                      <td style={styles.td}><StatusBadge status={m.status} /></td>
                       <td style={{ ...styles.td, whiteSpace: "nowrap" }}>
-                        <ActionButton
-                          label={busy && m.status !== "reviewed" ? "..." : "✓ Reviewed"}
-                          color="#1E7A4A"
-                          disabled={busy || m.status === "reviewed"}
-                          onClick={() => updateStatus(m, "reviewed")}
-                        />
+                        <ActionButton label={busy && m.status !== "reviewed" ? "..." : "✓ Reviewed"} color="#1E7A4A" disabled={busy || m.status === "reviewed"} onClick={() => updateStatus(m, "reviewed")} />
                         <span style={{ display: "inline-block", width: "6px" }} />
-                        <ActionButton
-                          label={busy && m.status !== "dismissed" ? "..." : "✕ Dismiss"}
-                          color="#888888"
-                          disabled={busy || m.status === "dismissed"}
-                          onClick={() => updateStatus(m, "dismissed")}
-                        />
+                        <ActionButton label={busy && m.status !== "dismissed" ? "..." : "✕ Dismiss"} color="#888888" disabled={busy || m.status === "dismissed"} onClick={() => updateStatus(m, "dismissed")} />
                         {m.status !== "new" && (
                           <>
                             <span style={{ display: "inline-block", width: "6px" }} />
-                            <ActionButton
-                              label={busy && m.status === "new" ? "..." : "↺ New"}
-                              color="#2E5FA3"
-                              disabled={busy}
-                              onClick={() => updateStatus(m, "new")}
-                            />
+                            <ActionButton label={busy && m.status === "new" ? "..." : "↺ New"} color="#2E5FA3" disabled={busy} onClick={() => updateStatus(m, "new")} />
                           </>
                         )}
                       </td>
@@ -378,196 +364,30 @@ export default function Dashboard() {
 
 // ── Styles ────────────────────────────────────────────────────────────────────
 const styles = {
-  page: {
-    fontFamily: "Arial, sans-serif",
-    maxWidth: "1200px",
-    margin: "0 auto",
-    padding: "32px 24px",
-    color: "#111",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: "28px",
-  },
-  title: {
-    fontSize: "26px",
-    fontWeight: "bold",
-    color: "#1B2A4A",
-    margin: "0 0 6px 0",
-  },
-  subtitle: {
-    fontSize: "14px",
-    color: "#555",
-    margin: 0,
-  },
-  refreshBtn: {
-    padding: "9px 20px",
-    background: "#1B2A4A",
-    color: "#fff",
-    border: "none",
-    borderRadius: "6px",
-    fontSize: "13px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    fontFamily: "Arial, sans-serif",
-    whiteSpace: "nowrap",
-  },
-  errorBanner: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    background: "#FDECEA",
-    border: "1px solid #B22222",
-    borderRadius: "6px",
-    padding: "10px 16px",
-    marginBottom: "20px",
-    color: "#B22222",
-    fontSize: "14px",
-  },
-  errorClose: {
-    background: "none",
-    border: "none",
-    color: "#B22222",
-    cursor: "pointer",
-    fontSize: "16px",
-  },
-  cardRow: {
-    display: "grid",
-    gridTemplateColumns: "repeat(4, 1fr)",
-    gap: "16px",
-    marginBottom: "24px",
-  },
-  card: {
-    background: "#fff",
-    border: "1px solid #DDDDDD",
-    borderRadius: "8px",
-    padding: "20px 24px",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-  },
-  cardLabel: {
-    fontSize: "11px",
-    fontWeight: "bold",
-    letterSpacing: "1px",
-    color: "#888",
-    margin: "0 0 10px 0",
-  },
-  cardCount: {
-    fontSize: "36px",
-    fontWeight: "bold",
-    margin: 0,
-  },
-  filterBar: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "12px",
-    alignItems: "flex-end",
-    background: "#fff",
-    border: "1px solid #DDDDDD",
-    borderRadius: "8px",
-    padding: "16px 20px",
-    marginBottom: "20px",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-  },
-  filterGroup: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "5px",
-    minWidth: "140px",
-  },
-  filterLabel: {
-    fontSize: "11px",
-    fontWeight: "bold",
-    letterSpacing: "0.8px",
-    color: "#888",
-    textTransform: "uppercase",
-  },
-  select: {
-    padding: "7px 10px",
-    border: "1px solid #CCCCCC",
-    borderRadius: "6px",
-    fontSize: "13px",
-    color: "#1B2A4A",
-    background: "#F9FAFB",
-    fontFamily: "Arial, sans-serif",
-    cursor: "pointer",
-    outline: "none",
-  },
-  clearBtn: {
-    padding: "7px 14px",
-    background: "#FDECEA",
-    color: "#B22222",
-    border: "1px solid #B22222",
-    borderRadius: "6px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    cursor: "pointer",
-    fontFamily: "Arial, sans-serif",
-  },
-  tableCard: {
-    background: "#fff",
-    border: "1px solid #DDDDDD",
-    borderRadius: "8px",
-    padding: "24px",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-  },
-  tableHeader: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "16px",
-  },
-  tableLabel: {
-    fontSize: "11px",
-    fontWeight: "bold",
-    letterSpacing: "1px",
-    color: "#2E5FA3",
-    margin: 0,
-  },
-  totalCount: {
-    fontSize: "12px",
-    color: "#888",
-    background: "#F4F6F9",
-    padding: "3px 10px",
-    borderRadius: "12px",
-  },
-  tableWrapper: {
-    overflowX: "auto",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    fontSize: "14px",
-  },
-  th: {
-    textAlign: "left",
-    padding: "10px 14px",
-    background: "#1B2A4A",
-    color: "#fff",
-    fontSize: "12px",
-    fontWeight: "bold",
-    letterSpacing: "0.5px",
-    whiteSpace: "nowrap",
-  },
-  td: {
-    padding: "12px 14px",
-    verticalAlign: "middle",
-    borderBottom: "1px solid #EEEEEE",
-  },
-  emptyMsg: {
-    color: "#888",
-    fontSize: "14px",
-    textAlign: "center",
-    padding: "40px 0",
-  },
-  actionBtn: {
-    padding: "5px 12px",
-    border: "none",
-    borderRadius: "5px",
-    fontSize: "12px",
-    fontWeight: "bold",
-    fontFamily: "Arial, sans-serif",
-    transition: "opacity 0.15s",
-  },
+  page:        { fontFamily: "Arial, sans-serif", maxWidth: "1200px", margin: "0 auto", padding: "32px 24px", color: "#111" },
+  header:      { display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "28px" },
+  title:       { fontSize: "26px", fontWeight: "bold", color: "#1B2A4A", margin: "0 0 6px 0" },
+  subtitle:    { fontSize: "14px", color: "#555", margin: 0 },
+  refreshBtn:  { padding: "9px 20px", background: "#1B2A4A", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer", fontFamily: "Arial, sans-serif", whiteSpace: "nowrap" },
+  errorBanner: { display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FDECEA", border: "1px solid #B22222", borderRadius: "6px", padding: "10px 16px", marginBottom: "20px", color: "#B22222", fontSize: "14px" },
+  errorClose:  { background: "none", border: "none", color: "#B22222", cursor: "pointer", fontSize: "16px" },
+  cardRow:     { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" },
+  card:        { background: "#fff", border: "1px solid #DDDDDD", borderRadius: "8px", padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+  cardLabel:   { fontSize: "11px", fontWeight: "bold", letterSpacing: "1px", color: "#888", margin: "0 0 10px 0" },
+  cardCount:   { fontSize: "36px", fontWeight: "bold", margin: 0 },
+  filterBar:   { display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "flex-end", background: "#fff", border: "1px solid #DDDDDD", borderRadius: "8px", padding: "16px 20px", marginBottom: "20px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+  filterGroup: { display: "flex", flexDirection: "column", gap: "5px", minWidth: "140px" },
+  filterLabel: { fontSize: "11px", fontWeight: "bold", letterSpacing: "0.8px", color: "#888", textTransform: "uppercase" },
+  select:      { padding: "7px 10px", border: "1px solid #CCCCCC", borderRadius: "6px", fontSize: "13px", color: "#1B2A4A", background: "#F9FAFB", fontFamily: "Arial, sans-serif", cursor: "pointer", outline: "none" },
+  clearBtn:    { padding: "7px 14px", background: "#FDECEA", color: "#B22222", border: "1px solid #B22222", borderRadius: "6px", fontSize: "12px", fontWeight: "bold", cursor: "pointer", fontFamily: "Arial, sans-serif" },
+  tableCard:   { background: "#fff", border: "1px solid #DDDDDD", borderRadius: "8px", padding: "24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
+  tableHeader: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" },
+  tableLabel:  { fontSize: "11px", fontWeight: "bold", letterSpacing: "1px", color: "#2E5FA3", margin: 0 },
+  totalCount:  { fontSize: "12px", color: "#888", background: "#F4F6F9", padding: "3px 10px", borderRadius: "12px" },
+  tableWrapper:{ overflowX: "auto" },
+  table:       { width: "100%", borderCollapse: "collapse", fontSize: "14px" },
+  th:          { textAlign: "left", padding: "10px 14px", background: "#1B2A4A", color: "#fff", fontSize: "12px", fontWeight: "bold", letterSpacing: "0.5px", whiteSpace: "nowrap" },
+  td:          { padding: "12px 14px", verticalAlign: "middle", borderBottom: "1px solid #EEEEEE" },
+  emptyMsg:    { color: "#888", fontSize: "14px", textAlign: "center", padding: "40px 0" },
+  actionBtn:   { padding: "5px 12px", border: "none", borderRadius: "5px", fontSize: "12px", fontWeight: "bold", fontFamily: "Arial, sans-serif", transition: "opacity 0.15s" },
 };

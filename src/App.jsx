@@ -2,10 +2,12 @@ import { Routes, Route, NavLink } from 'react-router-dom';
 import Dashboard from './pages/Dashboard';
 import Keywords from './pages/Keywords';
 import Settings from './pages/Settings';
+import ScanControl from './pages/ScanControl';
 const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/keywords', label: 'Keywords' },
-  { to: '/settings', label: 'Settings' }
+  { to: '/scan', label: 'Scan Control' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 
@@ -44,6 +46,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/keywords" element={<Keywords />} />
+          <Route path="/scan" element={<ScanControl />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
       </main>

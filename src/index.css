@@ -1,3 +1,255 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-width: 0;
+}
+
+button,
+input,
+select {
+  max-width: 100%;
+}
+
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.responsive-table table {
+  min-width: 760px;
+}
+
+.app-sidebar-top {
+  display: contents;
+}
+
+.hamburger-btn {
+  display: none;
+  width: 42px;
+  height: 38px;
+  flex-shrink: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+.hamburger-btn span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  border-radius: 999px;
+  background: #fff;
+}
+
+@media (max-width: 1024px) {
+  .app-shell {
+    flex-direction: column !important;
+  }
+
+  .app-sidebar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    width: 100% !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 16px !important;
+    padding: 14px 18px !important;
+  }
+
+  .app-brand {
+    margin-bottom: 0 !important;
+    flex-shrink: 0;
+  }
+
+  .app-brand h2 {
+    font-size: 16px;
+    line-height: 1.1;
+  }
+
+  .app-nav {
+    flex-direction: row !important;
+    gap: 8px !important;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    white-space: nowrap;
+  }
+
+  .app-main {
+    width: 100%;
+    overflow: visible !important;
+  }
+
+  .page-shell {
+    max-width: none !important;
+    width: 100% !important;
+    padding: 24px 18px !important;
+  }
+
+  .page-header {
+    gap: 18px !important;
+  }
+
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .filter-bar {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .filter-bar > div {
+    min-width: 0 !important;
+  }
+
+  .filter-bar select,
+  .filter-bar input,
+  .filter-bar button {
+    width: 100% !important;
+  }
+
+  .scraper-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-sidebar {
+    align-items: flex-start !important;
+    flex-direction: column !important;
+    gap: 0 !important;
+    padding: 12px 14px !important;
+  }
+
+  .app-sidebar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .app-brand {
+    width: auto;
+  }
+
+  .app-brand h2 br {
+    display: none;
+  }
+
+  .hamburger-btn {
+    display: flex;
+  }
+
+  .app-nav {
+    display: none !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    width: 100%;
+    overflow: visible;
+    padding-top: 12px;
+    padding-bottom: 2px;
+  }
+
+  .app-nav.app-nav-open {
+    display: flex !important;
+  }
+
+  .app-nav a {
+    flex: none;
+    width: 100%;
+    text-align: left;
+    padding: 10px 12px;
+  }
+
+  .page-shell {
+    padding: 20px 12px !important;
+  }
+
+  .page-header,
+  .dashboard-header,
+  .table-heading {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .page-actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .page-actions button,
+  .page-header > button,
+  .stackable-form button,
+  .settings-card button {
+    width: 100% !important;
+  }
+
+  .summary-grid,
+  .filter-bar,
+  .scraper-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .data-card {
+    padding: 16px !important;
+    border-radius: 8px !important;
+  }
+
+  .stackable-form {
+    flex-direction: column !important;
+  }
+
+  .stackable-form input {
+    width: 100% !important;
+  }
+
+  .scan-card-top {
+    align-items: flex-start !important;
+    gap: 14px !important;
+  }
+
+  .scan-card-top button {
+    min-width: 88px;
+  }
+
+  .responsive-table {
+    margin: 0 -16px;
+    padding: 0 16px;
+  }
+}
+
+@media (max-width: 420px) {
+  .page-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .data-card {
+    padding: 14px !important;
+  }
+
+  .responsive-table {
+    margin: 0 -14px;
+    padding: 0 14px;
+  }
+
+  .responsive-table table {
+    min-width: 700px;
+  }
+}

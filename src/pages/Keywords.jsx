@@ -95,9 +95,9 @@ export default function Keywords() {
 
   // ── UI ─────────────────────────────────────────────────────────────────
   return (
-    <div style={styles.page}>
+    <div className="page-shell keywords-page" style={styles.page}>
       {/* Header */}
-      <div style={styles.header}>
+      <div className="page-header" style={styles.header}>
         <h1 style={styles.title}>Keyword Manager</h1>
         <p style={styles.subtitle}>
           Add the brand names you want to monitor across trademark databases,
@@ -114,9 +114,9 @@ export default function Keywords() {
       )}
 
       {/* Add keyword form */}
-      <div style={styles.card}>
+      <div className="data-card" style={styles.card}>
         <p style={styles.cardLabel}>ADD NEW KEYWORD</p>
-        <form onSubmit={handleAdd} style={styles.addForm}>
+        <form className="stackable-form" onSubmit={handleAdd} style={styles.addForm}>
           <input
             type="text"
             placeholder="e.g. BrandName, YourLogo, TradeMark..."
@@ -137,8 +137,8 @@ export default function Keywords() {
       </div>
 
       {/* Keywords table */}
-      <div style={styles.card}>
-        <div style={styles.tableHeader}>
+      <div className="data-card" style={styles.card}>
+        <div className="table-heading" style={styles.tableHeader}>
           <p style={styles.cardLabel}>MONITORED KEYWORDS</p>
           <span style={styles.count}>{keywords.length} total</span>
         </div>
@@ -150,6 +150,7 @@ export default function Keywords() {
             No keywords yet. Add one above to start monitoring.
           </p>
         ) : (
+          <div className="responsive-table">
           <table style={styles.table}>
             <thead>
               <tr>
@@ -259,6 +260,7 @@ export default function Keywords() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </div>
     </div>

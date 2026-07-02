@@ -62,17 +62,17 @@ export default function Settings() {
   // ── Render ───────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={styles.page}>
+      <div className="page-shell settings-page" style={styles.page}>
         <p style={styles.loadingMsg}>Loading settings...</p>
       </div>
     );
   }
 
   return (
-    <div style={styles.page}>
+    <div className="page-shell settings-page" style={styles.page}>
 
       {/* Header */}
-      <div style={styles.header}>
+      <div className="page-header" style={styles.header}>
         <h1 style={styles.title}>Alert Settings</h1>
         <p style={styles.subtitle}>
           Configure where and when brand threat alerts are sent.
@@ -80,7 +80,7 @@ export default function Settings() {
       </div>
 
       {/* Settings card */}
-      <div style={styles.card}>
+      <div className="data-card settings-card" style={styles.card}>
 
         {/* Email input */}
         <div style={styles.field}>
@@ -146,7 +146,7 @@ export default function Settings() {
       </div>
 
       {/* Info box */}
-      <div style={styles.infoBox}>
+      <div className="data-card info-box" style={styles.infoBox}>
         <p style={styles.infoTitle}>ℹ How alerts work</p>
         <ul style={styles.infoList}>
           <li>After each scan completes, the system checks for new matches across all sources.</li>

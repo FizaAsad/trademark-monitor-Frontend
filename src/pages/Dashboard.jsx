@@ -456,10 +456,10 @@ export default function Dashboard() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div style={styles.page}>
+    <div className="page-shell dashboard-page" style={styles.page}>
 
       {/* Header */}
-      <div style={styles.header}>
+      <div className="page-header dashboard-header" style={styles.header}>
         <div>
           <h1 style={styles.title}>Threat Dashboard</h1>
           <p style={styles.subtitle}>
@@ -467,7 +467,7 @@ export default function Dashboard() {
             marketplaces, and social platforms.
           </p>
         </div>
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div className="page-actions" style={{ display: "flex", gap: "10px" }}>
           <button
             onClick={handleExportPDF}
             disabled={pdfLoading}
@@ -494,7 +494,7 @@ export default function Dashboard() {
       )}
 
       {/* Summary cards */}
-      <div style={styles.cardRow}>
+      <div className="summary-grid" style={styles.cardRow}>
         <SummaryCard label="TOTAL NEW"          count={newMatches.length}  color="#B22222" />
         <SummaryCard label="TRADEMARK MATCHES"  count={trademarkNew}       color="#1B2A4A" />
         <SummaryCard label="DOMAIN MATCHES"     count={domainNew}          color="#F0A500" />
@@ -502,7 +502,7 @@ export default function Dashboard() {
       </div>
 
       {/* Filters */}
-      <div style={styles.filterBar}>
+      <div className="filter-bar" style={styles.filterBar}>
         <FilterSelect label="Source"  value={filterSource}  onChange={setFilterSource}  options={sourceOptions}  />
         <FilterSelect label="Keyword" value={filterKeyword} onChange={setFilterKeyword} options={keywordOptions} />
         <div style={styles.filterGroup}>
@@ -523,8 +523,8 @@ export default function Dashboard() {
       </div>
 
       {/* Matches table */}
-      <div style={styles.tableCard}>
-        <div style={styles.tableHeader}>
+      <div className="data-card" style={styles.tableCard}>
+        <div className="table-heading" style={styles.tableHeader}>
           <p style={styles.tableLabel}>
             {hasActiveFilters ? "FILTERED MATCHES" : "ALL MATCHES"}
           </p>
@@ -544,7 +544,7 @@ export default function Dashboard() {
               : "No matches found yet. Run a scan to start detecting threats."}
           </p>
         ) : (
-          <div style={styles.tableWrapper}>
+          <div className="responsive-table" style={styles.tableWrapper}>
             <table style={styles.table}>
               <thead>
                 <tr>

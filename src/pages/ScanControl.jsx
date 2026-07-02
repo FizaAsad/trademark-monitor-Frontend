@@ -31,8 +31,8 @@ function ScanCard({ scraper, state, result, onRun }) {
     state === "running" ? "#2E5FA3" : "#DDDDDD";
 
   return (
-    <div style={{ ...styles.scanCard, borderLeft: `4px solid ${borderColor}` }}>
-      <div style={styles.scanCardTop}>
+    <div className="scan-card" style={{ ...styles.scanCard, borderLeft: `4px solid ${borderColor}` }}>
+      <div className="scan-card-top" style={styles.scanCardTop}>
         <div>
           <span style={{ ...styles.categoryBadge, background: cat.bg, color: cat.color }}>
             {scraper.category}
@@ -118,10 +118,10 @@ export default function ScanControl() {
   const anyRunning = Object.values(scanStates).some(s => s === "running");
 
   return (
-    <div style={styles.page}>
+    <div className="page-shell scan-page" style={styles.page}>
 
       {/* Header */}
-      <div style={styles.header}>
+      <div className="page-header" style={styles.header}>
         <div>
           <h1 style={styles.title}>Scan Control</h1>
           <p style={styles.subtitle}>Manually trigger any scraper and review the scan history below.</p>
@@ -137,7 +137,7 @@ export default function ScanControl() {
 
       {/* Scraper grid */}
       <div style={styles.sectionLabel}>SCRAPERS ({SCRAPERS.length})</div>
-      <div style={styles.grid}>
+      <div className="scraper-grid" style={styles.grid}>
         {SCRAPERS.map(s => (
           <ScanCard
             key={s.key}
@@ -150,8 +150,8 @@ export default function ScanControl() {
       </div>
 
       {/* Scan logs */}
-      <div style={styles.logsCard}>
-        <div style={styles.logsHeader}>
+      <div className="data-card" style={styles.logsCard}>
+        <div className="table-heading" style={styles.logsHeader}>
           <p style={styles.sectionLabel}>SCAN LOGS</p>
           <button onClick={fetchLogs} style={styles.refreshBtn}>↻ Refresh</button>
         </div>
@@ -161,7 +161,7 @@ export default function ScanControl() {
         ) : logs.length === 0 ? (
           <p style={styles.emptyMsg}>No scan logs yet. Run a scan above to populate this table.</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div className="responsive-table" style={{ overflowX: "auto" }}>
             <table style={styles.table}>
               <thead>
                 <tr>

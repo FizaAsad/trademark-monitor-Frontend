@@ -78,7 +78,229 @@ function ActionButton({ label, onClick, color, disabled }) {
   );
 }
 
-// ── Main Dashboard ────────────────────────────────────────────────────────────
+// PDF helpers
+function downloadBlob(blob, filename) {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.URL.revokeObjectURL(url);
+}
+
+function formatReportDate(value) {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function escapePdfText(value) {
+  return String(value ?? "-")
+    .normalize("NFKD")
+    .replace(/[^\x20-\x7E]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\\/g, "\\\\")
+    .replace(/\(/g, "\\(")
+    .replace(/\)/g, "\\)");
+}
+
+function splitLine(text, maxLength = 105) {
+  const words = String(text || "-").split(/\s+/);
+  const lines = [];
+  let line = "";
+
+  words.forEach((word) => {
+    const next = line ? `${line} ${word}` : word;
+    if (next.length <= maxLength) {
+      line = next;
+      return;
+    }
+    if (line) lines.push(line);
+    line = word.length > maxLength ? `${word.slice(0, maxLength - 3)}...` : word;
+  });
+
+  if (line) lines.push(line);
+  return lines;
+}
+
+function createClientReportPdf({ rows, summary, filters }) {
+  const today = new Date().toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const colors = {
+    navy: "0.106 0.165 0.290",
+    red: "0.698 0.133 0.133",
+    gold: "0.941 0.647 0.000",
+    green: "0.118 0.478 0.290",
+    blue: "0.180 0.373 0.639",
+    paleRed: "0.992 0.925 0.918",
+    paleGold: "1.000 0.953 0.816",
+    paleGreen: "0.831 0.929 0.855",
+    paleBlue: "0.839 0.894 0.941",
+    light: "0.957 0.965 0.976",
+    border: "0.835 0.835 0.835",
+    text: "0.067 0.067 0.067",
+    muted: "0.467 0.467 0.467",
+    white: "1 1 1",
+  };
+
+  const activeFilters = [
+    filters.source !== "all" ? `Source: ${filters.source}` : null,
+    filters.keyword !== "all" ? `Keyword: ${filters.keyword}` : null,
+    filters.status !== "all" ? `Status: ${filters.status}` : null,
+    filters.dateFrom ? `From: ${filters.dateFrom}` : null,
+    filters.dateTo ? `To: ${filters.dateTo}` : null,
+  ].filter(Boolean);
+
+  const pages = [];
+  let commands = [];
+  let y = 0;
+
+  const rect = (x, yPos, width, height, color) => {
+    commands.push(`${color} rg ${x} ${yPos} ${width} ${height} re f`);
+  };
+
+  const strokeRect = (x, yPos, width, height, color) => {
+    commands.push(`${color} RG ${x} ${yPos} ${width} ${height} re S`);
+  };
+
+  const text = (value, x, yPos, size = 10, font = "F1", color = colors.text) => {
+    commands.push(`${color} rg BT /${font} ${size} Tf ${x} ${yPos} Td (${escapePdfText(value)}) Tj ET`);
+  };
+
+  const addHeader = (pageNumber) => {
+    rect(0, 0, 612, 792, colors.white);
+    rect(0, 748, 612, 44, colors.navy);
+    rect(40, 704, 532, 34, colors.light);
+    text("CYBER NEXUS", 40, 766, 10, "F2", colors.gold);
+    text("Trademark Monitor", 40, 752, 15, "F2", colors.white);
+    text("Threat Dashboard Report", 230, 760, 18, "F2", colors.white);
+    text(`Generated: ${today}`, 420, 722, 9, "F1", colors.muted);
+    text(`Page ${pageNumber}`, 520, 34, 9, "F1", colors.muted);
+    y = 682;
+  };
+
+  const newPage = () => {
+    if (commands.length) pages.push(commands.join("\n"));
+    commands = [];
+    addHeader(pages.length + 1);
+  };
+
+  const ensureSpace = (height) => {
+    if (y - height < 56) newPage();
+  };
+
+  const drawSummaryCard = (x, label, count, accent, fill) => {
+    rect(x, y - 72, 122, 72, fill);
+    rect(x, y - 8, 122, 8, accent);
+    strokeRect(x, y - 72, 122, 72, colors.border);
+    text(label, x + 12, y - 28, 8, "F2", colors.muted);
+    text(String(count), x + 12, y - 58, 24, "F2", accent);
+  };
+
+  const drawTableHeader = () => {
+    ensureSpace(36);
+    rect(40, y - 22, 532, 22, colors.navy);
+    text("SOURCE", 48, y - 15, 8, "F2", colors.white);
+    text("KEYWORD", 118, y - 15, 8, "F2", colors.white);
+    text("MATCH NAME", 190, y - 15, 8, "F2", colors.white);
+    text("DATE", 455, y - 15, 8, "F2", colors.white);
+    text("STATUS", 520, y - 15, 8, "F2", colors.white);
+    y -= 30;
+  };
+
+  newPage();
+  text("All brand threats detected across trademark registries, domains, marketplaces, and social platforms.", 40, y, 10, "F1", colors.text);
+  y -= 24;
+  text(`Filters: ${activeFilters.length ? activeFilters.join("; ") : "None"}`, 40, y, 9, "F1", colors.muted);
+  text(`Exported rows: ${rows.length}`, 470, y, 9, "F2", colors.blue);
+  y -= 28;
+
+  drawSummaryCard(40, "TOTAL NEW", summary.totalNew, colors.red, colors.paleRed);
+  drawSummaryCard(176, "TRADEMARK", summary.trademarkNew, colors.navy, colors.paleBlue);
+  drawSummaryCard(312, "DOMAIN", summary.domainNew, colors.gold, colors.paleGold);
+  drawSummaryCard(448, "MARKETPLACE", summary.marketplaceNew, colors.green, colors.paleGreen);
+  y -= 100;
+
+  drawTableHeader();
+
+  if (!rows.length) {
+    text("No matches found for the selected filters.", 48, y, 10, "F1", colors.muted);
+  } else {
+    rows.forEach((match, index) => {
+      const nameLines = splitLine(match.match_name || "-", 48).slice(0, 3);
+      const rowHeight = Math.max(30, 14 + nameLines.length * 11);
+      ensureSpace(rowHeight + 8);
+      if (y > 650 || y < 90) drawTableHeader();
+
+      rect(40, y - rowHeight + 6, 532, rowHeight, index % 2 === 0 ? colors.white : colors.light);
+      strokeRect(40, y - rowHeight + 6, 532, rowHeight, colors.border);
+      text(match.source || match.category || "-", 48, y - 10, 8, "F2", colors.navy);
+      text(match.keyword || "-", 118, y - 10, 8, "F1", colors.text);
+      nameLines.forEach((line, lineIndex) => {
+        text(line, 190, y - 10 - lineIndex * 11, 8, "F1", colors.text);
+      });
+      text(formatReportDate(match.date_found), 455, y - 10, 8, "F1", colors.muted);
+      text(match.status || "-", 520, y - 10, 8, "F2", match.status === "new" ? colors.red : colors.green);
+      y -= rowHeight;
+    });
+  }
+
+  if (commands.length) pages.push(commands.join("\n"));
+
+  const objects = [];
+  const pageRefs = [];
+  const addObject = (body) => {
+    objects.push(body);
+    return objects.length;
+  };
+
+  addObject("<< /Type /Catalog /Pages 2 0 R >>");
+  addObject("");
+  addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+  addObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>");
+
+  pages.forEach((content) => {
+    const contentId = addObject(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
+    const pageId = addObject(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`
+    );
+    pageRefs.push(`${pageId} 0 R`);
+  });
+
+  objects[1] = `<< /Type /Pages /Kids [${pageRefs.join(" ")}] /Count ${pageRefs.length} >>`;
+
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  objects.forEach((body, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${body}\nendobj\n`;
+  });
+
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+  });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return new Blob([pdf], { type: "application/pdf" });
+}
+
+// Main Dashboard
 export default function Dashboard() {
   const [matches, setMatches]             = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -112,27 +334,34 @@ export default function Dashboard() {
   useEffect(() => { fetchMatches(); }, []);
 
   // ── PDF export ──────────────────────────────────────────────────────────────
-  async function handleExportPDF() {
+  function handleExportPDF() {
     setPdfLoading(true);
     setError("");
-    try {
-      const res = await fetch(`${API}/api/reports/pdf`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) throw new Error("PDF generation failed — server returned " + res.status);
+    const filename = `trademark-report-${new Date().toISOString().slice(0, 10)}.pdf`;
+    const reportPayload = {
+      matches: filtered,
+      summary: {
+        totalNew: newMatches.length,
+        trademarkNew,
+        domainNew,
+        marketplaceNew,
+      },
+      filters: {
+        source: filterSource,
+        keyword: filterKeyword,
+        status: filterStatus,
+        dateFrom: filterDateFrom,
+        dateTo: filterDateTo,
+      },
+    };
 
-      // Convert response to blob and trigger browser download
-      const blob = await res.blob();
-      const url  = window.URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href     = url;
-      a.download = `trademark-report-${new Date().toISOString().slice(0, 10)}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+    try {
+      const blob = createClientReportPdf({
+        rows: reportPayload.matches,
+        summary: reportPayload.summary,
+        filters: reportPayload.filters,
+      });
+      downloadBlob(blob, filename);
     } catch (err) {
       setError("PDF export failed: " + err.message);
     } finally {

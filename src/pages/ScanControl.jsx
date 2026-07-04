@@ -22,6 +22,7 @@ const CATEGORY_COLORS = {
   social:      { bg: "#F0E6FF", color: "#5B2D8E" },
 };
 
+
 function ScanCard({ scraper, state, result, onRun }) {
   const cat = CATEGORY_COLORS[scraper.category] || { bg: "#F4F6F9", color: "#555" };
   const isRunning = state === "running";
@@ -45,7 +46,7 @@ function ScanCard({ scraper, state, result, onRun }) {
           disabled={isRunning}
           style={{ ...styles.runBtn, background: isRunning ? "#ccc" : "#1B2A4A", cursor: isRunning ? "not-allowed" : "pointer" }}
         >
-          {isRunning ? "Running..." : "▶ Run"}
+          {isRunning ? "Running..." : "Run"}
         </button>
       </div>
       {result && (
@@ -55,7 +56,7 @@ function ScanCard({ scraper, state, result, onRun }) {
           color:      state === "error" ? "#B22222" : "#1E7A4A",
           borderTop:  `1px solid ${state === "error" ? "#f5c6c6" : "#b2dfca"}`,
         }}>
-          {state === "error" ? "✕ " : "✓ "}{result}
+          {state === "error" ? "Error: " : "Done: "}{result}
         </div>
       )}
     </div>
@@ -63,7 +64,7 @@ function ScanCard({ scraper, state, result, onRun }) {
 }
 
 function duration(started, completed) {
-  if (!started || !completed) return "—";
+  if (!started || !completed) return "-";
   const ms = new Date(completed) - new Date(started);
   if (ms < 1000) return `${ms}ms`;
   if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
@@ -119,8 +120,6 @@ export default function ScanControl() {
 
   return (
     <div className="page-shell scan-page" style={styles.page}>
-
-      {/* Header */}
       <div className="page-header" style={styles.header}>
         <div>
           <h1 style={styles.title}>Scan Control</h1>
@@ -131,31 +130,29 @@ export default function ScanControl() {
           disabled={anyRunning}
           style={{ ...styles.runAllBtn, opacity: anyRunning ? 0.6 : 1, cursor: anyRunning ? "not-allowed" : "pointer" }}
         >
-          {anyRunning ? "Running..." : "▶ Run All Scans"}
+          {anyRunning ? "Running..." : "Run All Scans"}
         </button>
       </div>
 
-      {/* Scraper grid */}
       <div style={styles.sectionLabel}>SCRAPERS ({SCRAPERS.length})</div>
       <div className="scraper-grid" style={styles.grid}>
         {SCRAPERS.map(s => (
           <ScanCard
             key={s.key}
             scraper={s}
-            state={scanStates[s.key]   || "idle"}
+            state={scanStates[s.key] || "idle"}
             result={scanResults[s.key] || ""}
             onRun={runScan}
           />
         ))}
       </div>
 
-      {/* Scan logs */}
       <div className="data-card" style={styles.logsCard}>
         <div className="table-heading" style={styles.logsHeader}>
           <p style={styles.sectionLabel}>SCAN LOGS</p>
-          <button onClick={fetchLogs} style={styles.refreshBtn}>↻ Refresh</button>
+          <button onClick={fetchLogs} style={styles.refreshBtn}>Refresh</button>
         </div>
-        {logsError && <div style={styles.errorBanner}>⚠ {logsError}</div>}
+        {logsError && <div style={styles.errorBanner}>{logsError}</div>}
         {logsLoading ? (
           <p style={styles.emptyMsg}>Loading logs...</p>
         ) : logs.length === 0 ? (
@@ -182,19 +179,19 @@ export default function ScanControl() {
                     : { bg: "#D6E4F0", color: "#1B2A4A" };
                   return (
                     <tr key={log.id} style={{ background: i % 2 === 0 ? "#fff" : "#F4F6F9" }}>
-                      <td style={{ ...styles.td, fontWeight: "600", color: "#1B2A4A" }}>{log.scan_type || "—"}</td>
+                      <td style={{ ...styles.td, fontWeight: "600", color: "#1B2A4A" }}>{log.scan_type || "-"}</td>
                       <td style={{ ...styles.td, color: "#555", fontSize: "13px" }}>
-                        {log.started_at ? new Date(log.started_at).toLocaleString("en-GB", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "—"}
+                        {log.started_at ? new Date(log.started_at).toLocaleString("en-GB", { day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit" }) : "-"}
                       </td>
                       <td style={{ ...styles.td, color: "#555", fontSize: "13px" }}>{duration(log.started_at, log.completed_at)}</td>
-                      <td style={{ ...styles.td, textAlign: "center", fontWeight: "bold", color: "#1B2A4A" }}>{log.total_found ?? "—"}</td>
+                      <td style={{ ...styles.td, textAlign: "center", fontWeight: "bold", color: "#1B2A4A" }}>{log.total_found ?? "-"}</td>
                       <td style={styles.td}>
                         <span style={{ background: statusStyle.bg, color: statusStyle.color, padding: "3px 10px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold" }}>
                           {statusLabel}
                         </span>
                       </td>
                       <td style={{ ...styles.td, color: "#B22222", fontSize: "12px", maxWidth: "240px", wordBreak: "break-word" }}>
-                        {log.error_log || "—"}
+                        {log.error_log || "-"}
                       </td>
                     </tr>
                   );
@@ -224,7 +221,7 @@ const styles = {
   runBtn:        { padding: "8px 16px", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", fontFamily: "Arial, sans-serif", whiteSpace: "nowrap", flexShrink: 0 },
   scanResult:    { padding: "8px 18px", fontSize: "12px", fontWeight: "500" },
   logsCard:      { background: "#fff", border: "1px solid #DDDDDD", borderRadius: "8px", padding: "24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
-  logsHeader:    { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" },
+  logsHeader:    { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", gap: "12px" },
   refreshBtn:    { padding: "6px 14px", background: "#F4F6F9", color: "#1B2A4A", border: "1px solid #DDDDDD", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer", fontFamily: "Arial, sans-serif" },
   errorBanner:   { background: "#FDECEA", border: "1px solid #B22222", borderRadius: "6px", padding: "10px 16px", marginBottom: "16px", color: "#B22222", fontSize: "14px" },
   emptyMsg:      { color: "#888", fontSize: "14px", textAlign: "center", padding: "40px 0" },

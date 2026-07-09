@@ -185,8 +185,7 @@ function createClientReportPdf({ rows, summary, filters }) {
     rect(0, 0, 612, 792, colors.white);
     rect(0, 748, 612, 44, colors.navy);
     rect(40, 704, 532, 34, colors.light);
-    text("CYBER NEXUS", 40, 766, 10, "F2", colors.gold);
-    text("Trademark Monitor", 40, 752, 15, "F2", colors.white);
+    text("GoBeagleGo", 40, 760, 15, "F2", colors.white);
     text("Threat Dashboard Report", 230, 760, 18, "F2", colors.white);
     text(`Generated: ${today}`, 420, 722, 9, "F1", colors.muted);
     text(`Page ${pageNumber}`, 520, 34, 9, "F1", colors.muted);

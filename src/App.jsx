@@ -24,8 +24,7 @@ export default function App() {
       <aside className="app-sidebar w-56 bg-[#0f2044] text-white flex flex-col py-8 px-4 shrink-0">
         <div className="app-sidebar-top">
           <div className="app-brand mb-8">
-            <p className="text-xs font-semibold text-yellow-400 uppercase tracking-widest">Cyber Nexus</p>
-            <h2 className="text-lg font-bold mt-1 leading-tight">Trademark<br />Monitor</h2>
+            <h2 className="text-lg font-bold mt-1 leading-tight">GoBeagleGo</h2>
           </div>
           <button
             type="button"

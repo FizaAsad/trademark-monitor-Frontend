@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
+import { supabase } from "../lib/supabase";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -340,25 +341,67 @@ export default function Dashboard() {
     }
   }
 
+  async function checkAndNotify(data) {
+    const lastSeen = parseInt(localStorage.getItem("gbg_last_seen_count") || "0", 10);
+    const newCount = data.filter(m => m.status === "new").length;
+    if (newCount > lastSeen) {
+      const diff = newCount - lastSeen;
+      setNewAlert(diff);
+      setMatches(data);
+      if (Notification.permission === "granted") {
+        new Notification("GoBeagleGo Alert", {
+          body: `${diff} new business name match${diff > 1 ? "es" : ""} detected — similar to your brand.`,
+          icon: "/favicon.ico",
+          tag: "gbg-match-alert",
+        });
+      }
+    }
+  }
+
   useEffect(() => {
     fetchMatches();
 
-    // Poll every 60s for new matches
+    // Request browser notification permission
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+
+    // Supabase Realtime — instant alert when any match is inserted into DB
+    const MATCH_TABLES = [
+      "trademark_matches",
+      "domain_matches",
+      "marketplace_matches",
+      "social_matches",
+    ];
+
+    const channels = MATCH_TABLES.map((table) =>
+      supabase
+        .channel(`realtime:${table}`)
+        .on("postgres_changes", { event: "INSERT", schema: "public", table }, async () => {
+          try {
+            const res = await fetch(`${API}/api/matches`);
+            if (!res.ok) return;
+            const data = await res.json();
+            await checkAndNotify(data);
+          } catch (_) {}
+        })
+        .subscribe()
+    );
+
+    // Polling every 60s as fallback (in case Realtime is not enabled on a table)
     pollRef.current = setInterval(async () => {
       try {
         const res = await fetch(`${API}/api/matches`);
         if (!res.ok) return;
         const data = await res.json();
-        const lastSeen = parseInt(localStorage.getItem("gbg_last_seen_count") || "0", 10);
-        const newCount = data.filter(m => m.status === "new").length;
-        if (newCount > lastSeen) {
-          setNewAlert(newCount - lastSeen);
-          setMatches(data);
-        }
+        await checkAndNotify(data);
       } catch (_) {}
     }, 60000);
 
-    return () => clearInterval(pollRef.current);
+    return () => {
+      clearInterval(pollRef.current);
+      channels.forEach((ch) => supabase.removeChannel(ch));
+    };
   }, []);
 
   function dismissAlert() {

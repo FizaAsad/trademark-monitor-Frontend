@@ -9,6 +9,7 @@
     "preview": "npx vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.110.2",
     "axios": "^1.7.9",
     "cheerio": "^1.1.0",
     "fast-levenshtein": "^3.0.0",

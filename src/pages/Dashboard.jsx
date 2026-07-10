@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -307,6 +307,8 @@ export default function Dashboard() {
   const [error, setError]                 = useState("");
   const [actionLoading, setActionLoading] = useState({});
   const [pdfLoading, setPdfLoading]       = useState(false);
+  const [newAlert, setNewAlert]           = useState(null);
+  const pollRef                           = useRef(null);
 
   // ── Filters state ───────────────────────────────────────────────────────────
   const [filterSource,   setFilterSource]   = useState("all");
@@ -338,7 +340,32 @@ export default function Dashboard() {
     }
   }
 
-  useEffect(() => { fetchMatches(); }, []);
+  useEffect(() => {
+    fetchMatches();
+
+    // Poll every 60s for new matches
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch(`${API}/api/matches`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const lastSeen = parseInt(localStorage.getItem("gbg_last_seen_count") || "0", 10);
+        const newCount = data.filter(m => m.status === "new").length;
+        if (newCount > lastSeen) {
+          setNewAlert(newCount - lastSeen);
+          setMatches(data);
+        }
+      } catch (_) {}
+    }, 60000);
+
+    return () => clearInterval(pollRef.current);
+  }, []);
+
+  function dismissAlert() {
+    const newCount = matches.filter(m => m.status === "new").length;
+    localStorage.setItem("gbg_last_seen_count", String(newCount));
+    setNewAlert(null);
+  }
 
   // ── PDF export ──────────────────────────────────────────────────────────────
   function handleExportPDF() {
@@ -501,6 +528,21 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* New match notification */}
+      {newAlert && (
+        <div style={styles.alertBanner}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={styles.alertDot} />
+            <strong>{newAlert} new match{newAlert > 1 ? "es" : ""} detected</strong>
+            <span style={{ fontSize: "13px", opacity: 0.85 }}>— a business name similar to yours was just registered.</span>
+          </div>
+          <div style={{ display: "flex", gap: "10px" }}>
+            <button onClick={() => { setFilterStatus("new"); dismissAlert(); }} style={styles.alertViewBtn}>View Now</button>
+            <button onClick={dismissAlert} style={styles.alertDismissBtn}>Dismiss</button>
+          </div>
+        </div>
+      )}
+
       {/* Summary cards */}
       <div className="summary-grid" style={styles.cardRow}>
         <SummaryCard label="TOTAL NEW"          count={newMatches.length}  color="#B22222" />
@@ -606,8 +648,12 @@ const styles = {
   title:       { fontSize: "26px", fontWeight: "bold", color: "#1B2A4A", margin: "0 0 6px 0" },
   subtitle:    { fontSize: "14px", color: "#555", margin: 0 },
   refreshBtn:  { padding: "9px 20px", background: "#1B2A4A", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer", fontFamily: "Arial, sans-serif", whiteSpace: "nowrap" },
-  errorBanner: { display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FDECEA", border: "1px solid #B22222", borderRadius: "6px", padding: "10px 16px", marginBottom: "20px", color: "#B22222", fontSize: "14px" },
-  errorClose:  { background: "none", border: "none", color: "#B22222", cursor: "pointer", fontSize: "16px" },
+  errorBanner:      { display: "flex", justifyContent: "space-between", alignItems: "center", background: "#FDECEA", border: "1px solid #B22222", borderRadius: "6px", padding: "10px 16px", marginBottom: "20px", color: "#B22222", fontSize: "14px" },
+  errorClose:       { background: "none", border: "none", color: "#B22222", cursor: "pointer", fontSize: "16px" },
+  alertBanner:      { display: "flex", justifyContent: "space-between", alignItems: "center", background: "#0f2044", border: "2px solid #E3000F", borderRadius: "8px", padding: "14px 20px", marginBottom: "20px", color: "#fff", fontSize: "14px", gap: "12px", flexWrap: "wrap" },
+  alertDot:         { width: 10, height: 10, borderRadius: "50%", background: "#E3000F", display: "inline-block", flexShrink: 0, animation: "pulse 1.5s infinite" },
+  alertViewBtn:     { padding: "7px 18px", background: "#E3000F", color: "#fff", border: "none", borderRadius: "6px", fontSize: "13px", fontWeight: "bold", cursor: "pointer", whiteSpace: "nowrap" },
+  alertDismissBtn:  { padding: "7px 14px", background: "transparent", color: "#ccc", border: "1px solid #555", borderRadius: "6px", fontSize: "13px", cursor: "pointer", whiteSpace: "nowrap" },
   cardRow:     { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px", marginBottom: "24px" },
   card:        { background: "#fff", border: "1px solid #DDDDDD", borderRadius: "8px", padding: "20px 24px", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" },
   cardLabel:   { fontSize: "11px", fontWeight: "bold", letterSpacing: "1px", color: "#888", margin: "0 0 10px 0" },

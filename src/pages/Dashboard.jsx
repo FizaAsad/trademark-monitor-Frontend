@@ -302,6 +302,7 @@ function createClientReportPdf({ rows, summary, filters }) {
 // Main Dashboard
 export default function Dashboard() {
   const [matches, setMatches]             = useState([]);
+  const [keywords, setKeywords]           = useState([]);
   const [loading, setLoading]             = useState(true);
   const [error, setError]                 = useState("");
   const [actionLoading, setActionLoading] = useState({});
@@ -319,10 +320,17 @@ export default function Dashboard() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${API}/api/matches`);
-      if (!res.ok) throw new Error("Server returned " + res.status);
-      const data = await res.json();
+      const [matchRes, kwRes] = await Promise.all([
+        fetch(`${API}/api/matches`),
+        fetch(`${API}/api/keywords`),
+      ]);
+      if (!matchRes.ok) throw new Error("Server returned " + matchRes.status);
+      const data = await matchRes.json();
       setMatches(data);
+      if (kwRes.ok) {
+        const kwData = await kwRes.json();
+        setKeywords(kwData.map(k => k.term).filter(Boolean));
+      }
     } catch (err) {
       setError("Could not load matches. Is the backend running?");
     } finally {
@@ -398,9 +406,10 @@ export default function Dashboard() {
 
   // ── Derived filter options from live data ───────────────────────────────────
   const keywordOptions = useMemo(() => {
-    const unique = [...new Set(matches.map((m) => m.keyword).filter(Boolean))].sort();
+    const fromMatches = matches.map((m) => m.keyword).filter(Boolean);
+    const unique = [...new Set([...keywords, ...fromMatches])].sort();
     return [{ value: "all", label: "All Keywords" }, ...unique.map((k) => ({ value: k, label: k }))];
-  }, [matches]);
+  }, [matches, keywords]);
 
   const sourceOptions = [
     { value: "all",         label: "All Sources"   },

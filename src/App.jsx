@@ -21,10 +21,13 @@ export default function App() {
   return (
     <div className="app-shell flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <aside className="app-sidebar w-56 bg-[#0f2044] text-white flex flex-col py-8 px-4 shrink-0">
+      <aside className="app-sidebar w-56 bg-black text-white flex flex-col py-8 px-4 shrink-0">
         <div className="app-sidebar-top">
           <div className="app-brand mb-8">
-            <h2 className="text-lg font-bold mt-1 leading-tight">GoBeagleGo</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ width: 36, height: 36, background: "#E3000F", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: "bold", fontSize: 16, color: "#fff", flexShrink: 0 }}>G</div>
+              <h2 style={{ fontSize: 16, fontWeight: "bold", color: "#fff", margin: 0, lineHeight: 1.2 }}>GoBeagleGo</h2>
+            </div>
           </div>
           <button
             type="button"
@@ -47,7 +50,7 @@ export default function App() {
               onClick={() => setMenuOpen(false)}
               className={({ isActive }) =>
                 `px-3 py-2 rounded text-sm font-medium transition-colors ${
-                  isActive ? 'bg-yellow-400 text-[#0f2044]' : 'text-gray-300 hover:bg-white/10'
+                  isActive ? 'bg-[#E3000F] text-white' : 'text-gray-300 hover:bg-white/10'
                 }`
               }
             >

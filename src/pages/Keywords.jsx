@@ -207,18 +207,42 @@ export default function Keywords() {
                   <td style={{ ...styles.td, textAlign: "center" }}>
                     <button
                       onClick={() => handleToggle(kw)}
-                      style={{
-                        ...styles.toggle,
-                        background: kw.active ? "#1E7A4A" : "#ccc",
-                      }}
                       title={kw.active ? "Click to pause" : "Click to activate"}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        background: "none",
+                        border: "none",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
                     >
-                      <span
-                        style={{
-                          ...styles.toggleThumb,
-                          transform: kw.active ? "translateX(20px)" : "translateX(2px)",
-                        }}
-                      />
+                      <span style={{
+                        position: "relative",
+                        width: "44px",
+                        height: "24px",
+                        borderRadius: "12px",
+                        background: kw.active ? "#E3000F" : "#D1D5DB",
+                        display: "inline-block",
+                        transition: "background 0.2s",
+                        flexShrink: 0,
+                      }}>
+                        <span style={{
+                          position: "absolute",
+                          top: "2px",
+                          left: kw.active ? "22px" : "2px",
+                          width: "20px",
+                          height: "20px",
+                          background: "#fff",
+                          borderRadius: "50%",
+                          transition: "left 0.2s",
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.25)",
+                        }} />
+                      </span>
+                      <span style={{ fontSize: "12px", fontWeight: "600", color: kw.active ? "#E3000F" : "#9CA3AF", minWidth: 40 }}>
+                        {kw.active ? "ON" : "OFF"}
+                      </span>
                     </button>
                   </td>
 
